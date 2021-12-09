@@ -66,8 +66,9 @@ RCT_EXPORT_MODULE();
                                                   initialProperties:nil];
         UIViewController * vc = [[UIViewController alloc] init];
         vc.view = rootView;
-        UINavigationController *rootVC = (UINavigationController*)[[[UIApplication sharedApplication] keyWindow] rootViewController];
-        [rootVC pushViewController:vc animated:true];
+        [vc setModalPresentationStyle: UIModalPresentationFullScreen];
+        UIViewController *rootVC = (UIViewController*)[[[UIApplication sharedApplication] keyWindow] rootViewController];
+        [rootVC presentViewController:vc animated:YES completion:nil];
         [[NSNotificationCenter defaultCenter] postNotificationName:@"Download LiveBundle" object:nil];
     }];
   }

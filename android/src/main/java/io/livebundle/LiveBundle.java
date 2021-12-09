@@ -350,7 +350,7 @@ public class LiveBundle extends ReactContextBaseJavaModule {
    * @param bundleId  The id (UUID v4) of the bundle to download
    */
   @ReactMethod
-  public void downloadBundle(final String packageId, final String bundleId, final Promise promise) {
+  public void downloadBundle(final String packageUrlString, final String packageId, final String bundleId, final Promise promise) {
     Log.d(TAG, "downloadBundle()");
     final BundleDownloader.BundleInfo bundleInfo = new BundleDownloader.BundleInfo();
     // Initiate download
@@ -390,11 +390,7 @@ public class LiveBundle extends ReactContextBaseJavaModule {
         }
       },
       mJSLiveBundleZipFile,
-      String.format("%s/packages/%s/%s%s",
-        sStorageUrl,
-        packageId,
-        bundleId,
-        sStorageUrlSuffix == null ? "" : sStorageUrlSuffix),
+      packageUrlString,
       bundleInfo);
   }
 

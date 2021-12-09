@@ -1,5 +1,7 @@
 import { NativeModules, Platform, Linking } from "react-native";
 import { setCustomSourceTransformer } from "react-native/Libraries/Image/resolveAssetSource";
+import AWS from "aws-sdk";
+import * as awsConfig from '../../aws-config.json';
 
 export class LiveBundle {
   /**
@@ -16,6 +18,14 @@ export class LiveBundle {
       this.BUNDLE_ID = nm.BUNDLE_ID;
       this.IS_BUNDLE_INSTALLED = nm.IS_BUNDLE_INSTALLED;
       this.IS_SESSION_STARTED = nm.IS_SESSION_STARTED;
+      this.s3 = new AWS.S3({
+        accessKeyId: awsConfig.AWS_ACCESS_KEY_ID,
+        secretAccessKey: awsConfig.AWS_SECRET_ACCESS_KEY,
+        sessionToken: awsConfig.AWS_SESSION_TOKEN,
+        region: awsConfig.AWS_REGION,
+        maxRetries: 4,
+        correctClockSkew: true,
+      });
       if (this.IS_BUNDLE_INSTALLED) {
         setCustomSourceTransformer((resolver) => {
           const { hash } = resolver.asset;
@@ -25,7 +35,7 @@ export class LiveBundle {
             /(^.*)(\..+)/,
             `$1.${Platform.OS}$2`
           );
-          res.uri = this.getUrl(`assets/${hash}/${platformFileName}`);
+          res.uri = this.getAWSSignedUrl(`assets/${hash}/${platformFileName}`);
           return res;
         });
       }
@@ -47,6 +57,30 @@ export class LiveBundle {
   }
 
   /**
+   * Gets AWS signed url to resource
+   * @param {string} resourcePath Path to resource
+   */
+  getAWSSignedUrl(resourcePath) {
+    return this.s3.getSignedUrl('getObject', {
+      Bucket: awsConfig.AWS_BUCKET_NAME,
+      Key: resourcePath,
+      Expires: 6 * 24 * 60 * 60
+    });
+  }
+
+  /**
+   * Gets temporarily AWS signed url to resource
+   * @param {string} resourcePath Path to resource
+   */
+  getTempAWSSignedUrl(resourcePath) {
+    return this.s3.getSignedUrl('getObject', {
+      Bucket: awsConfig.AWS_BUCKET_NAME,
+      Key: resourcePath,
+      Expires: 15 * 60
+    });
+  }
+
+  /**
    * Gets the metadata associated to a LiveBundle session or package
    * @param {string} type Either SESSION or PACKAGE
    * @param {string} id Session or Package id
@@ -54,7 +88,7 @@ export class LiveBundle {
   async getMetadata(type, id) {
     console.log(`[LiveBundle] getMetadata(${type}, ${id})`);
     const res = await fetch(
-      this.getUrl(
+      this.getTempAWSSignedUrl(
         `${type === "PACKAGE" ? "packages" : "sessions"}/${id}/metadata.json`
       )
     );
@@ -132,7 +166,8 @@ export class LiveBundle {
    */
   async downloadBundle(packageId, bundleId) {
     console.log(`[LiveBundle] downloadBundle(${packageId}, ${bundleId})`);
-    return NativeModules.LiveBundle.downloadBundle(packageId, bundleId);
+    const bundlePath = this.getTempAWSSignedUrl(`packages/${packageId}/${bundleId}`);
+    return NativeModules.LiveBundle.downloadBundle(bundlePath, packageId, bundleId);
   }
 
   /**
