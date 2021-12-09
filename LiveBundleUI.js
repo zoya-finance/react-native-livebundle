@@ -9,7 +9,6 @@ import {
   TouchableOpacity,
   Platform,
 } from "react-native";
-import { RNCamera } from "react-native-camera";
 import livebundle from "./LiveBundle";
 
 const ErrorScreen = ({ errorMessage }) => (
@@ -61,34 +60,11 @@ const BundleFlavorSelectionScreen = ({ platformBundles, onBundleSelected }) => (
   </View>
 );
 
-const QRCodeScannerScreen = ({ onQrCodeRead }) => (
-  <RNCamera
-    captureAudio={false}
-    style={styles.preview}
-    type={RNCamera.Constants.Type.back}
-    flashMode={RNCamera.Constants.FlashMode.off}
-    androidCameraPermissionOptions={{
-      title: "Permission to use camera",
-      message: "We need your permission to use your camera",
-      buttonPositive: "Ok",
-      buttonNegative: "Cancel",
-    }}
-    onBarCodeRead={({ data }) => {
-      if (data.startsWith("s:")) {
-        onQrCodeRead({ sessionId: data.replace("s:", "") });
-      } else {
-        onQrCodeRead({ packageId: data });
-      }
-    }}
-  />
-);
-
 const MainScreen = ({
   bundleId,
   packageId,
   isBundleInstalled,
   isSessionStarted,
-  onScanInitiated,
 }) => (
   <View style={styles.subContainer}>
     <Image
@@ -96,14 +72,6 @@ const MainScreen = ({
       style={styles.logo}
       source={require("./assets/logo.png")}
     />
-    <TouchableOpacity
-      style={styles.button}
-      onPress={() => {
-        onScanInitiated();
-      }}
-    >
-      <Text style={styles.buttonText}>Scan</Text>
-    </TouchableOpacity>
     {(isBundleInstalled || isSessionStarted) && (
       <TouchableOpacity
         style={styles.button}
@@ -133,7 +101,6 @@ export class LiveBundleUI extends Component<{}> {
     this.state = {
       bundleId: undefined,
       isDownloadCompleted: false,
-      isScanInitiated: false,
       packageId: props?.packageId,
       packageMetadata: undefined,
       sessionId: props?.sessionId,
@@ -145,7 +112,6 @@ export class LiveBundleUI extends Component<{}> {
     const {
       bundleId,
       isDownloadCompleted,
-      isScanInitiated,
       packageId,
       packageMetadata,
       sessionId,
@@ -215,15 +181,6 @@ export class LiveBundleUI extends Component<{}> {
           });
         })
         .catch((error) => this.setState({ error }));
-    } else if (isScanInitiated) {
-      // If the scanning has been triggered, show the scanner
-      screen = (
-        <QRCodeScannerScreen
-          onQrCodeRead={({ packageId, sessionId }) =>
-            this.setState({ isScanInitiated: false, packageId, sessionId })
-          }
-        />
-      );
     } else {
       // LiveBundle main screen
       const {
@@ -238,7 +195,6 @@ export class LiveBundleUI extends Component<{}> {
           packageId={PACKAGE_ID}
           isBundleInstalled={IS_BUNDLE_INSTALLED}
           isSessionStarted={IS_SESSION_STARTED}
-          onScanInitiated={() => this.setState({ isScanInitiated: true })}
         />
       );
     }
