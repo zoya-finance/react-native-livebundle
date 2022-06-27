@@ -78,8 +78,9 @@ RCT_EXPORT_METHOD(launchUI:(NSDictionary *)props resolve:(RCTPromiseResolveBlock
                                                   initialProperties:props];
         UIViewController * vc = [[UIViewController alloc] init];
         vc.view = rootView;
-        UINavigationController *rootVC = (UINavigationController*)[[[UIApplication sharedApplication] keyWindow] rootViewController];
-        [rootVC pushViewController:vc animated:true];
+        [vc setModalPresentationStyle: UIModalPresentationFullScreen];
+        UIViewController *rootVC = (UIViewController*)[[[UIApplication sharedApplication] keyWindow] rootViewController];
+        [rootVC presentViewController:vc animated:YES completion:nil];
         sIsInitialLaunch = NO;
         resolve(nil);
     });
@@ -99,8 +100,8 @@ RCT_EXPORT_METHOD(reset:(RCTPromiseResolveBlock)resolve reject:(__unused RCTProm
         url = [[NSBundle mainBundle] URLForResource:@"main" withExtension:@"jsbundle"];
 #endif
         [self->_bridge setBundleURL: url];
-        UINavigationController *rootVC = (UINavigationController*)[[[UIApplication sharedApplication] keyWindow] rootViewController];
-        [rootVC popViewControllerAnimated:NO];
+        UIViewController *rootVC = (UIViewController*)[[[UIApplication sharedApplication] keyWindow] rootViewController];
+        [rootVC dismissViewControllerAnimated:YES completion:nil];
         RCTTriggerReloadCommandListeners(@"reset bridge");
         resolve(nil);
     });
@@ -111,8 +112,8 @@ RCT_EXPORT_METHOD(launchLiveSession:(NSString *)serverHost resolve:(RCTPromiseRe
         urlString = [NSString stringWithFormat:@"http://%@/index.bundle?platform=ios&dev=false&minify=true", serverHost];
         NSURL *url = [[NSURL alloc] initWithString:urlString];
         [self->_bridge setBundleURL: url];
-        UINavigationController *rootVC = (UINavigationController*)[[[UIApplication sharedApplication] keyWindow] rootViewController];
-        [rootVC popViewControllerAnimated:NO];
+        UIViewController *rootVC = (UIViewController*)[[[UIApplication sharedApplication] keyWindow] rootViewController];
+        [rootVC dismissViewControllerAnimated:YES completion:nil];
         isSessionStarted = YES;
         RCTTriggerReloadCommandListeners(@"launch Live Session");
         resolve(nil);
@@ -127,14 +128,15 @@ RCT_EXPORT_METHOD(launchLiveSession:(NSString *)serverHost resolve:(RCTPromiseRe
                                               initialProperties:nil];
     UIViewController * vc = [[UIViewController alloc] init];
     vc.view = rootView;
-    UINavigationController *rootVC = (UINavigationController*)[[[UIApplication sharedApplication] keyWindow] rootViewController];
-    [rootVC pushViewController:vc animated:true];
+    [vc setModalPresentationStyle: UIModalPresentationFullScreen];
+    UIViewController *rootVC = (UIViewController*)[[[UIApplication sharedApplication] keyWindow] rootViewController];
+    [rootVC presentViewController:vc animated:YES completion:nil];
 }
 
 - (void)installBundle {
     dispatch_async(dispatch_get_main_queue(), ^{
-        UINavigationController *rootVC = (UINavigationController*)[[[UIApplication sharedApplication] keyWindow] rootViewController];
-        [rootVC popViewControllerAnimated:NO];
+        UIViewController *rootVC = (UIViewController*)[[[UIApplication sharedApplication] keyWindow] rootViewController];
+        [rootVC dismissViewControllerAnimated:YES completion:nil];
         if (![urlString  isEqual: @""]) {
             NSURL *bundleURL = [[NSURL alloc] initFileURLWithPath:urlString];
             [self->_bridge setBundleURL:bundleURL];
@@ -143,8 +145,7 @@ RCT_EXPORT_METHOD(launchLiveSession:(NSString *)serverHost resolve:(RCTPromiseRe
         });
 }
 
-RCT_EXPORT_METHOD(downloadBundle:(NSString *)pId bundleId: (NSString *)bId resolve:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject) {
-    NSString *packageUrlString = [NSString stringWithFormat:@"%@/packages/%@/%@%@", sStorageUrl, pId, bId, sStorageUrlSuffix];
+RCT_EXPORT_METHOD(downloadBundle:(NSString *)packageUrlString packageId: (NSString *)pId bundleId: (NSString *)bId resolve:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject) {
     NSURL *url = [NSURL URLWithString:packageUrlString];
     bundleId = bId;
     packageId = pId;
